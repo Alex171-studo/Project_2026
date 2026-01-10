@@ -2,96 +2,91 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// Static counter for packet IDs
-static int currentPacketId = 1;
 
-Sensor* createSensor(float x, float y) {
-    Sensor* s = (Sensor*)malloc(sizeof(Sensor));
-    if (!s) {
-        perror("Failed to allocate Sensor");
-        exit(EXIT_FAILURE); // Fatal error
+static int compteur_id_paquet = 1;
+
+Capteur* creer_capteur(float x, float y) {
+    Capteur* c = (Capteur*)malloc(sizeof(Capteur));
+    if (!c) {
+        perror("Echec allocation Capteur");
+        exit(EXIT_FAILURE);
     }
-    s->battery = BATTERY_INIT;
-    s->x = x;
-    s->y = y;
-    s->bufferHead = NULL;
-    s->bufferUsage = 0;
+    c->batterie = BATTERY_INIT;
+    c->x = x;
+    c->y = y;
+    c->buffer_tete = NULL;
+    c->buffer_usage = 0;
     
-    // Seed random number generator
     srand(time(NULL));
     
-    return s;
+    return c;
 }
 
-void freeSensor(Sensor* sensor) {
-    if (!sensor) return;
+void liberer_capteur(Capteur* c) {
+    if (!c) return;
 
-    Packet* current = sensor->bufferHead;
-    while (current != NULL) {
-        Packet* next = current->next;
-        free(current);
-        current = next;
+    Paquet* courant = c->buffer_tete;
+    while (courant != NULL) {
+        Paquet* suivant = courant->suivant;
+        free(courant);
+        courant = suivant;
     }
-    free(sensor);
+    free(c);
 }
 
-void producePacket(Sensor* sensor) {
-    if (!sensor) return;
+void produire_paquet(Capteur* c) {
+    if (!c) return;
     
-    // 1. Generate new packet data
-    Packet* newPacket = (Packet*)malloc(sizeof(Packet));
-    if (!newPacket) {
-        perror("Failed to allocate Packet");
+    Paquet* nouveau_paquet = (Paquet*)malloc(sizeof(Paquet));
+    if (!nouveau_paquet) {
+        perror("Echec allocation Paquet");
         return;
     }
     
-    newPacket->id = currentPacketId++;
-    newPacket->value = (float)(rand() % 1000) / 10.0f; // 0.0 to 100.0
-    newPacket->timestamp = (long)time(NULL);
-    newPacket->next = NULL;
+    nouveau_paquet->id = compteur_id_paquet++;
+    nouveau_paquet->valeur = (float)(rand() % 1000) / 10.0f;
+    nouveau_paquet->timestamp = (long)time(NULL);
+    nouveau_paquet->suivant = NULL;
 
-    // 2. Manage Buffer Saturation
-    if (sensor->bufferUsage >= MAX_BUFFER_SIZE) {
-        // Buffer full: Remove oldest (Head)
-        if (sensor->bufferHead != NULL) {
-            Packet* oldHead = sensor->bufferHead;
-            sensor->bufferHead = oldHead->next; // Move head forward
+    if (c->buffer_usage >= MAX_BUFFER_SIZE) {
+        if (c->buffer_tete != NULL) {
+            Paquet* vieux_paquet = c->buffer_tete;
+            c->buffer_tete = vieux_paquet->suivant;
             
-            printf("ALERTE : Mémoire saturée. Suppression du paquet ID [%d] pour libérer de l'espace.\n", oldHead->id);
+            printf("ALERTE : Mémoire saturée. Suppression du paquet ID [%d] pour libérer de l'espace.\n", vieux_paquet->id);
             
-            free(oldHead); // FREE Memory
-            sensor->bufferUsage--;
+            free(vieux_paquet);
+            c->buffer_usage--;
         }
     }
 
-    // 3. Add to Tail
-    if (sensor->bufferHead == NULL) {
-        sensor->bufferHead = newPacket;
+    if (c->buffer_tete == NULL) {
+        c->buffer_tete = nouveau_paquet;
     } else {
-        Packet* current = sensor->bufferHead;
-        while (current->next != NULL) {
-            current = current->next;
+        Paquet* courant = c->buffer_tete;
+        while (courant->suivant != NULL) {
+            courant = courant->suivant;
         }
-        current->next = newPacket;
+        courant->suivant = nouveau_paquet;
     }
-    sensor->bufferUsage++;
+    c->buffer_usage++;
     
-    printf("Info: Packet Generated (ID: %d, Val: %.2f) | Usage: %d/%d\n", 
-           newPacket->id, newPacket->value, sensor->bufferUsage, MAX_BUFFER_SIZE);
+    printf("Info: Paquet Genere (ID: %d, Val: %.2f) | Usage: %d/%d\n", 
+           nouveau_paquet->id, nouveau_paquet->valeur, c->buffer_usage, MAX_BUFFER_SIZE);
 }
 
-void printSensorStatus(const Sensor* sensor) {
-    if (!sensor) return;
-    printf("\n--- Sensor Status ---\n");
-    printf("Battery: %.2f J\n", sensor->battery);
-    printf("Position: (%.2f, %.2f)\n", sensor->x, sensor->y);
-    printf("Buffer Usage: %d/%d\n", sensor->bufferUsage, MAX_BUFFER_SIZE);
+void afficher_etat_capteur(const Capteur* c) {
+    if (!c) return;
+    printf("\n--- Etat Capteur ---\n");
+    printf("Batterie: %.2f J\n", c->batterie);
+    printf("Position: (%.2f, %.2f)\n", c->x, c->y);
+    printf("Buffer Usage: %d/%d\n", c->buffer_usage, MAX_BUFFER_SIZE);
     
-    Packet* p = sensor->bufferHead;
-    printf("Packets: [ ");
+    Paquet* p = c->buffer_tete;
+    printf("Paquets: [ ");
     while (p != NULL) {
-        printf("{ID:%d Val:%.1f} ", p->id, p->value);
-        p = p->next;
+        printf("{ID:%d Val:%.1f} ", p->id, p->valeur);
+        p = p->suivant;
     }
     printf("]\n---------------------\n");
 }

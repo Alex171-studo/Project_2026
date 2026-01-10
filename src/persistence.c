@@ -2,99 +2,94 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int saveState(const Sensor* sensor) {
-    if (!sensor) return -1;
+int sauvegarder_etat(const Capteur* c) {
+    if (!c) return -1;
 
     FILE* f = fopen(SAVE_FILENAME, "wb");
     if (!f) {
-        perror("Error opening save file");
+        perror("Erreur ouverture fichier sauvegarde");
         return -1;
     }
 
-    // 1. Save Sensor Data (Scalars only)
-    // Optimization: Write fields individually to avoid saving memory pointers (garbage on disk)
-    if (fwrite(&sensor->battery, sizeof(float), 1, f) != 1 ||
-        fwrite(&sensor->x, sizeof(float), 1, f) != 1 ||
-        fwrite(&sensor->y, sizeof(float), 1, f) != 1 ||
-        fwrite(&sensor->bufferUsage, sizeof(int), 1, f) != 1) {
+    if (fwrite(&c->batterie, sizeof(float), 1, f) != 1 ||
+        fwrite(&c->x, sizeof(float), 1, f) != 1 ||
+        fwrite(&c->y, sizeof(float), 1, f) != 1 ||
+        fwrite(&c->buffer_usage, sizeof(int), 1, f) != 1) {
         
-        perror("Error writing sensor metadata");
+        perror("Erreur ecriture metadonnees capteur");
         fclose(f);
         return -1;
     }
 
-    // 2. Save Packet List
-    Packet* current = sensor->bufferHead;
-    while (current != NULL) {
-        // Write the packet content (excluding next pointer effectively, though we write the struct)
-        if (fwrite(current, sizeof(Packet), 1, f) != 1) {
-            perror("Error writing packet data");
+    Paquet* courant = c->buffer_tete;
+    while (courant != NULL) {
+        if (fwrite(&courant->id, sizeof(int), 1, f) != 1 ||
+            fwrite(&courant->valeur, sizeof(float), 1, f) != 1 ||
+            fwrite(&courant->timestamp, sizeof(long), 1, f) != 1) {
+            perror("Erreur ecriture paquet");
             fclose(f);
             return -1;
         }
-        current = current->next;
+        courant = courant->suivant;
     }
 
-    printf("State saved successfully to %s.\n", SAVE_FILENAME);
+    printf("Etat sauvegarde avec succes dans %s.\n", SAVE_FILENAME);
     fclose(f);
     return 0;
 }
 
-Sensor* loadState() {
+Capteur* charger_etat() {
     FILE* f = fopen(SAVE_FILENAME, "rb");
     if (!f) {
-        printf("No save file found.\n");
+        printf("Aucun fichier de sauvegarde trouve.\n");
         return NULL;
     }
 
-    Sensor* s = (Sensor*)malloc(sizeof(Sensor));
-    if (!s) {
+    Capteur* c = (Capteur*)malloc(sizeof(Capteur));
+    if (!c) {
         fclose(f);
         return NULL;
     }
 
-    // 1. Read Sensor Data (Scalars)
-    if (fread(&s->battery, sizeof(float), 1, f) != 1 ||
-        fread(&s->x, sizeof(float), 1, f) != 1 ||
-        fread(&s->y, sizeof(float), 1, f) != 1 ||
-        fread(&s->bufferUsage, sizeof(int), 1, f) != 1) {
+    if (fread(&c->batterie, sizeof(float), 1, f) != 1 ||
+        fread(&c->x, sizeof(float), 1, f) != 1 ||
+        fread(&c->y, sizeof(float), 1, f) != 1 ||
+        fread(&c->buffer_usage, sizeof(int), 1, f) != 1) {
         
-        printf("Error reading sensor values.\n");
-        free(s);
+        printf("Erreur lecture valeurs capteur.\n");
+        free(c);
         fclose(f);
         return NULL;
     }
 
-    // Initialize pointers safely
-    s->bufferHead = NULL;
+    c->buffer_tete = NULL;
     
-    // Allow reconstruction loop to run
-    int count = s->bufferUsage;
-    s->bufferUsage = 0; // Reset internal counter, will be incremented as we add nodes 
+    int compte = c->buffer_usage;
+    c->buffer_usage = 0; 
 
-    // 2. Read Packets and Reconstruct List
-    Packet* tail = NULL;
-    for (int i = 0; i < count; i++) {
-        Packet* p = (Packet*)malloc(sizeof(Packet));
-        if (fread(p, sizeof(Packet), 1, f) != 1) {
-            printf("Error reading packet %d.\n", i);
-            // Handle partial failure? For now, break.
+    Paquet* dernier = NULL;
+    for (int i = 0; i < compte; i++) {
+        Paquet* p = (Paquet*)malloc(sizeof(Paquet));
+        if (fread(&p->id, sizeof(int), 1, f) != 1 ||
+            fread(&p->valeur, sizeof(float), 1, f) != 1 ||
+            fread(&p->timestamp, sizeof(long), 1, f) != 1) {
+            printf("Erreur lecture paquet %d.\n", i);
             free(p);
             break;
         }
-        p->next = NULL;
+        p->suivant = NULL;
 
-        if (s->bufferHead == NULL) {
-            s->bufferHead = p;
-            tail = p;
+        if (c->buffer_tete == NULL) {
+            c->buffer_tete = p;
+            dernier = p;
         } else {
-            tail->next = p;
-            tail = p;
+            dernier->suivant = p;
+            dernier = p;
         }
-        s->bufferUsage++;
+        c->buffer_usage++;
     }
 
-    printf("State loaded successfully. Buffer size: %d\n", s->bufferUsage);
+    printf("Etat charge avec succes. Taille buffer: %d\n", c->buffer_usage);
     fclose(f);
-    return s;
+    return c;
 }

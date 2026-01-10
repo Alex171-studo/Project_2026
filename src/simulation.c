@@ -1,102 +1,87 @@
 #include "../inc/simulation.h"
 #include <stdio.h>
 #include <math.h>
-#include <unistd.h> // for sleep()
+#include <unistd.h>
 
-// Global simulation time tracker (local to this run)
-static int simTime = 0;
+static int simulation_temps = 0;
 
-float calculateTransmissionEnergy(float x, float y) {
-    // Distance to (0,0)
-    // Constraint: Use sqrt and pow from <math.h> as requested in the subject
-    float d = sqrt(pow(x, 2) + pow(y, 2));
-    
-    // Formula: E = E_elec + E_amp * d^2
-    // We use pow(d, 2) to be strictly compliant with "math & algo" requirements
-    return E_ELEC + (E_AMP * pow(d, 2));
+float calculer_energie_transmission(float x, float y) {
+    float distance_squared = (x * x) + (y * y);
+    return E_ELEC + (E_AMP * distance_squared);
 }
 
-int attemptTransmission(Sensor* sensor) {
-    if (!sensor || sensor->bufferHead == NULL) {
-        return 0; // Nothing to send
+int tenter_transmission(Capteur* c) {
+    if (!c || c->buffer_tete == NULL) {
+        return 0;
     }
 
-    float energyCostPerPacket = calculateTransmissionEnergy(sensor->x, sensor->y);
-    int packetsSent = 0;
+    float cout_energie = calculer_energie_transmission(c->x, c->y);
+    int paquets_envoyes = 0;
 
-    // Send all packets in buffer
-    while (sensor->bufferHead != NULL) {
-        // Check if enough battery
-        if (sensor->battery < energyCostPerPacket) {
-            printf("Battery low! Cannot transmit packet ID %d\n", sensor->bufferHead->id);
+    while (c->buffer_tete != NULL) {
+        if (c->batterie < cout_energie) {
+            printf("Batterie faible! Impossible de transmettre paquet ID %d\n", c->buffer_tete->id);
             break; 
         }
 
-        // "Send" packet (Remove from queue)
-        Packet* temp = sensor->bufferHead;
-        sensor->bufferHead = temp->next;
+        Paquet* temp = c->buffer_tete;
+        c->buffer_tete = temp->suivant;
         
-        // Consume energy
-        sensor->battery -= energyCostPerPacket;
-        if (sensor->battery < 0) sensor->battery = 0;
+        c->batterie -= cout_energie;
+        if (c->batterie < 0) c->batterie = 0;
 
-        // Free memory
         free(temp);
-        sensor->bufferUsage--;
-        packetsSent++;
+        c->buffer_usage--;
+        paquets_envoyes++;
     }
     
-    return packetsSent;
+    return paquets_envoyes;
 }
 
-void logToCrashFile(const Sensor* sensor) {
+void ecrire_log(const Capteur* c) {
     FILE* f = fopen("log.txt", "a");
     if (f) {
-        // Format: Temps: 10s | Batterie: 45.2J | Paquets en attente: 3
         fprintf(f, "Temps: %ds | Batterie: %.2fJ | Paquets en attente: %d\n", 
-                simTime, sensor->battery, sensor->bufferUsage);
+                simulation_temps, c->batterie, c->buffer_usage);
         fclose(f);
     }
 }
 
-int runSimulationStep(Sensor* sensor) {
-    if (sensor->battery <= 0) return 0;
+int etape_simulation(Capteur* c, int* paquets_envoyes_ptr) {
+    if (c->batterie <= 0) return 0;
 
-    simTime++;
+    simulation_temps++;
 
-    // 1. Produce Data
-    producePacket(sensor);
+    produire_paquet(c);
 
-    // 2. Attempt Transmission
-    int sent = attemptTransmission(sensor);
-    if (sent > 0) {
-        printf("Transmission: %d packets sent to Base Station.\n", sent);
+    int envoyes = tenter_transmission(c);
+    if (paquets_envoyes_ptr) *paquets_envoyes_ptr = envoyes;
+    
+    if (envoyes > 0) {
+        printf("Transmission: %d paquets envoyes a la Station.\n", envoyes);
     }
 
-    // 3. Log
-    logToCrashFile(sensor);
+    ecrire_log(c);
 
-    return (sensor->battery > 0);
+    return (c->batterie > 0);
 }
 
-void runSimulation(Sensor* sensor) {
-    printf("Starting Simulation...\n");
-    // Clear previous log logic? 
-    // Usually a new run might append or overwrite. Requirement implies "crash test log", maybe overwrite?
-    // I'll overwrite at start of runSimulation if Time is 0, or just append. 
-    // To be safe and clean, maybe clear log.txt at start of MAIN execution, not here.
-    
-    // totalPackets removed as it was unused. 
-    // If stats are needed, they can be calculated from bufferUsage or a separate counter.
+void lancer_simulation(Capteur* c) {
+    printf("Demarrage Simulation...\n");
+    int total_transmis = 0;
 
-    while (sensor->battery > 0) {
-        int alive = runSimulationStep(sensor);
-        printSensorStatus(sensor);
+    while (c->batterie > 0) {
+        int envoyes = 0;
+        int vivant = etape_simulation(c, &envoyes);
+        total_transmis += envoyes;
         
-        if (!alive) break;
+        afficher_etat_capteur(c);
         
-        sleep(1); // Slow down simulation for visibility (1 sec per step)
+        if (!vivant) break;
+        
+        sleep(1);
     }
 
-    printf("Simulation Ended. Battery Dead.\n");
+    printf("Simulation Terminee. Batterie Vide.\n");
+    printf("Total Paquets Transmis: %d\n", total_transmis);
 }

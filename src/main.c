@@ -4,125 +4,118 @@
 #include "../inc/simulation.h"
 #include "../inc/persistence.h"
 
-void clearScreen() {
-    // Portable ANSI Escape code to clear screen (Works on most Linux/Unix terminals)
+void effacer_ecran() {
     printf("\033[H\033[J"); 
 }
 
-void printHeader() {
+void afficher_entete() {
     printf("========================================\n");
     printf("   ECO-SENSING : IoT Network Simulator  \n");
     printf("========================================\n");
 }
 
-void printMenu() {
-    printf("\n--- Main Menu ---\n");
-    printf("1. New Simulation (Initialize Sensor)\n");
-    printf("2. Load Previous State\n");
-    printf("3. View Sensor Status\n");
-    printf("4. Run Simulation (Auto - until dead)\n");
-    printf("5. Run Single Step (Manual Debug)\n");
-    printf("6. Save State\n");
-    printf("7. Exit\n");
-    printf("Select option: ");
+void afficher_menu() {
+    printf("\n--- Menu Principal ---\n");
+    printf("1. Nouvelle Simulation (Init Capteur)\n");
+    printf("2. Charger Etat Precedent\n");
+    printf("3. Voir Etat Capteur\n");
+    printf("4. Lancer Simulation (Auto - jusqu'a mort)\n");
+    printf("5. Executer Une Etape (Debug Manuel)\n");
+    printf("6. Sauvegarder Etat\n");
+    printf("7. Quitter\n");
+    printf("Choisir une option: ");
 }
 
 int main() {
-    Sensor* currentSensor = NULL;
-    int choice;
+    Capteur* capteur_courant = NULL;
+    int choix;
     
-    // Clear log on start? Or per new sim? 
-    // Let's clear on New Sim.
-
     while (1) {
-        // clearScreen(); // Optional, might flicker
-        printHeader();
-        if (currentSensor) {
-            printf("Current Status: Battery %.2f J | Buffer %d/5\n", 
-                   currentSensor->battery, currentSensor->bufferUsage);
+        afficher_entete();
+        if (capteur_courant) {
+            printf("Etat Actuel: Batterie %.2f J | Buffer %d/5\n", 
+                   capteur_courant->batterie, capteur_courant->buffer_usage);
         } else {
-            printf("Current Status: NO SENSOR INITIALIZED\n");
+            printf("Etat Actuel: AUCUN CAPTEUR INITIALISE\n");
         }
         
-        printMenu();
-        if (scanf("%d", &choice) != 1) {
-            while(getchar() != '\n'); // Clear buffer
+        afficher_menu();
+        if (scanf("%d", &choix) != 1) {
+            while(getchar() != '\n');
             continue;
         }
 
-        switch (choice) {
-            case 1: // New
-                if (currentSensor) freeSensor(currentSensor);
+        switch (choix) {
+            case 1:
+                if (capteur_courant) liberer_capteur(capteur_courant);
                 float x, y;
-                printf("Enter Sensor X Position: ");
+                printf("Entrer Position X Capteur: ");
                 scanf("%f", &x);
-                printf("Enter Sensor Y Position: ");
+                printf("Entrer Position Y Capteur: ");
                 scanf("%f", &y);
-                currentSensor = createSensor(x, y);
+                capteur_courant = creer_capteur(x, y);
                 
-                // Reset log
                 FILE* f = fopen("log.txt", "w");
-                if (f) { fprintf(f, "--- New Log ---\n"); fclose(f); }
+                if (f) { fprintf(f, "--- Nouveau Log ---\n"); fclose(f); }
                 
-                printf("Sensor Initialized at (%.2f, %.2f)\n", x, y);
+                printf("Capteur Initialise a (%.2f, %.2f)\n", x, y);
                 break;
 
-            case 2: // Load
-                if (currentSensor) freeSensor(currentSensor);
-                currentSensor = loadState();
+            case 2:
+                if (capteur_courant) liberer_capteur(capteur_courant);
+                capteur_courant = charger_etat();
                 break;
 
-            case 3: // View
-                if (currentSensor) printSensorStatus(currentSensor);
-                else printf("Error: No sensor initialized.\n");
+            case 3:
+                if (capteur_courant) afficher_etat_capteur(capteur_courant);
+                else printf("Erreur: Aucun capteur initialise.\n");
                 break;
 
-            case 4: // Run Auto
-                if (currentSensor) {
-                    runSimulation(currentSensor);
-                    // Autosave after death? Or just let user manage?
-                    // Usually dead means dead.
+            case 4:
+                if (capteur_courant) {
+                    lancer_simulation(capteur_courant);
                 } else {
-                    printf("Error: No sensor initialized.\n");
+                    printf("Erreur: Aucun capteur initialise.\n");
                 }
                 break;
 
-            case 5: // Step
-                if (currentSensor) {
-                    int alive = runSimulationStep(currentSensor);
-                    printSensorStatus(currentSensor);
-                    if (!alive) printf("Sensor has DIED (Battery 0).\n");
+            case 5:
+                if (capteur_courant) {
+                    int envoyes = 0;
+                    int vivant = etape_simulation(capteur_courant, &envoyes);
+                    afficher_etat_capteur(capteur_courant);
+                    if (!vivant) printf("Le Capteur est MORT (Batterie 0).\n");
                 } else {
-                    printf("Error: No sensor initialized.\n");
+                    printf("Erreur: Aucun capteur initialise.\n");
                 }
                 break;
 
-            case 6: // Save
-                if (currentSensor) {
-                    saveState(currentSensor);
+            case 6:
+                if (capteur_courant) {
+                    sauvegarder_etat(capteur_courant);
                 } else {
-                    printf("Error: No sensor initialized.\n");
+                    printf("Erreur: Aucun capteur initialise.\n");
                 }
                 break;
 
-            case 7: // Exit
-                if (currentSensor) {
-                    printf("Do you want to save before exiting? (1=Yes, 0=No): ");
-                    int saveChoice;
-                    if (scanf("%d", &saveChoice) == 1 && saveChoice == 1) {
-                        saveState(currentSensor);
+            case 7:
+                if (capteur_courant) {
+                    printf("Voulez-vous sauvegarder avant de quitter? (1=Oui, 0=Non): ");
+                    int choix_save;
+                    if (scanf("%d", &choix_save) == 1 && choix_save == 1) {
+                        sauvegarder_etat(capteur_courant);
                     }
-                    freeSensor(currentSensor);
+                    liberer_capteur(capteur_courant);
                 }
-                printf("Exiting Eco-Sensing. Goodbye!\n");
+                printf("Au Revoir!\n");
                 return 0;
 
             default:
-                printf("Invalid option.\n");
+                printf("Option Invalide.\n");
         }
         
-        printf("\nPress Enter to continue...");
+        printf("\nAppuyez sur Entree pour continuer...");
         while(getchar() != '\n'); 
-        getchar(); // Wait for user
+        getchar();
     }
 }
