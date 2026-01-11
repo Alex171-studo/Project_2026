@@ -53,7 +53,7 @@ void produire_paquet(Capteur* c) {
             Paquet* vieux_paquet = c->buffer_tete;
             c->buffer_tete = vieux_paquet->suivant;
             
-            printf("ALERTE : Mémoire saturée. Suppression du paquet ID [%d] pour libérer de l'espace.\n", vieux_paquet->id);
+            printf("🔴 ALERTE: Memoire saturee. Suppression FIFO du paquet ID [%d] pour liberer de l'espace.\n", vieux_paquet->id);
             
             free(vieux_paquet);
             c->buffer_usage--;
@@ -71,7 +71,7 @@ void produire_paquet(Capteur* c) {
     }
     c->buffer_usage++;
     
-    printf("Info: Paquet Genere (ID: %d, Val: %.2f) | Usage: %d/%d\n", 
+    printf("📦 Paquet Genere (ID: %d, Val: %.2f) | Usage: %d/%d\n", 
            nouveau_paquet->id, nouveau_paquet->valeur, c->buffer_usage, MAX_BUFFER_SIZE);
 }
 

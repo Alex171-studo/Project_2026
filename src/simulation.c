@@ -20,7 +20,8 @@ int tenter_transmission(Capteur* c) {
 
     while (c->buffer_tete != NULL) {
         if (c->batterie < cout_energie) {
-            printf("Batterie faible! Impossible de transmettre paquet ID %d\n", c->buffer_tete->id);
+            printf("⚠️  Energie insuffisante! Requis: %.2fJ | Disponible: %.2fJ | Paquet ID %d stocke en memoire.\n", 
+                   cout_energie, c->batterie, c->buffer_tete->id);
             break; 
         }
 
@@ -29,6 +30,9 @@ int tenter_transmission(Capteur* c) {
         
         c->batterie -= cout_energie;
         if (c->batterie < 0) c->batterie = 0;
+
+        printf("✓ Paquet ID %d transmis avec succes! Energie consommee: %.2fJ | Batterie restante: %.2fJ\n",
+               temp->id, cout_energie, c->batterie);
 
         free(temp);
         c->buffer_usage--;
@@ -56,10 +60,6 @@ int etape_simulation(Capteur* c, int* paquets_envoyes_ptr) {
 
     int envoyes = tenter_transmission(c);
     if (paquets_envoyes_ptr) *paquets_envoyes_ptr = envoyes;
-    
-    if (envoyes > 0) {
-        printf("Transmission: %d paquets envoyes a la Station.\n", envoyes);
-    }
 
     ecrire_log(c);
 
@@ -67,7 +67,20 @@ int etape_simulation(Capteur* c, int* paquets_envoyes_ptr) {
 }
 
 void lancer_simulation(Capteur* c) {
-    printf("Demarrage Simulation...\n");
+    float cout_energie = calculer_energie_transmission(c->x, c->y);
+    printf("\n========== DEMARRAGE SIMULATION ==========\n");
+    printf("Position Capteur: (%.2f, %.2f)\n", c->x, c->y);
+    printf("Cout Energetique par Transmission: %.2fJ\n", cout_energie);
+    printf("Batterie Initiale: %.2fJ\n", c->batterie);
+    
+    if (cout_energie > c->batterie) {
+        printf("\n⚠️  ATTENTION: Le cout energetique (%.2fJ) depasse la batterie (%.2fJ).\n", cout_energie, c->batterie);
+        printf("   Les paquets seront stockes en memoire jusqu'a saturation du buffer.\n");
+    } else {
+        printf("\n✓ Transmission possible. Nombre max de transmissions: ~%d\n", (int)(c->batterie / cout_energie));
+    }
+    printf("==========================================\n\n");
+    
     int total_transmis = 0;
 
     while (c->batterie > 0) {
