@@ -1,6 +1,6 @@
 # Eco-Sensing: Documentation Complète du Projet
 
-Ce document présente l'architecture, la structure et le fonctionnement détaillé du simulateur de réseau de capteurs "Eco-Sensing".
+Ce document présente l'architecture, la structure et le fonctionnement détaillé du simulateur de réseau de capteurs .
 
 ## 1. Vue d'ensemble
 Le projet est un simulateur écrit en C modulaire qui modélise le comportement d'un capteur IoT autonome. Il gère :
@@ -70,7 +70,12 @@ Point d'entrée et Interface Utilisateur (Menu).
 Le projet utilise un `Makefile` pour simplifier la compilation.
 
 **Commandes :**
-1. **Compiler** : Ouvrez un terminal dans le dossier et tapez :
+1. **Cloner le projet** : Ouvrez un terminal et tapez :
+   ```bash
+   git clone https://github.com/Alex171-studo/Project_2026 && cd Project_2026
+   ```
+   
+1. **Compiler** : Dans le terminal tapez :
    ```bash
    make
    ```
@@ -78,17 +83,9 @@ Le projet utilise un `Makefile` pour simplifier la compilation.
    ```bash
    ./eco_sensing
    ```
-3. **Nettoyer** (supprimer les exécutables et objets) :
+3. **Nettoyer** (supprimer les exécutables et objets après avoir finis ) :
    ```bash
    make clean
    ```
 
-## 5. Fonctionnement Vidéo (Preuve)
-Pour la vidéo demandée :
-1. Lancez le programme.
-2. Choisissez "New Simulation".
-3. Choisissez "Run Single Step" 6 fois de suite.
-4. Au 6ème coup, vous verrez le message : `ALERTE : Mémoire saturée...`. C'est la preuve de la gestion mémoire.
-5. Vérifiez ensuite le fichier `log.txt`.
 
-Ce projet respecte toutes les contraintes de modularité, de nommage (CamelCase) et de performance.
