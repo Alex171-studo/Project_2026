@@ -1,6 +1,4 @@
-# Eco-Sensing: Documentation Complète du Projet
-
-Ce document présente l'architecture, la structure et le fonctionnement détaillé du simulateur de réseau de capteurs .
+# Documentation Complète du Projet
 
 ## 1. Vue d'ensemble
 Le projet est un simulateur écrit en C modulaire qui modélise le comportement d'un capteur IoT autonome. Il gère :
