@@ -9,6 +9,7 @@
 #define E_AMP 0.01
 
 void lancer_simulation(Capteur* c);
+void reinitialiser_temps_simulation();
 int etape_simulation(Capteur* c, int* paquets_envoyes);
 float calculer_energie_transmission(float x, float y);
 int tenter_transmission(Capteur* c);

@@ -5,19 +5,17 @@
 
 static int compteur_id_paquet = 1;
 
-Capteur* creer_capteur(float x, float y) {
+Capteur* creer_capteur(float x, float y, float batt_init) {
     Capteur* c = (Capteur*)malloc(sizeof(Capteur));
     if (!c) {
         perror("Echec allocation Capteur");
         exit(EXIT_FAILURE);
     }
-    c->batterie = BATTERY_INIT;
+    c->batterie = (batt_init > 0) ? batt_init : BATTERY_INIT;
     c->x = x;
     c->y = y;
     c->buffer_tete = NULL;
     c->buffer_usage = 0;
-    
-    srand(time(NULL));
     
     return c;
 }
@@ -44,7 +42,7 @@ void produire_paquet(Capteur* c) {
     }
     
     nouveau_paquet->id = compteur_id_paquet++;
-    nouveau_paquet->valeur = (float)(rand() % 1000) / 10.0f;
+    nouveau_paquet->valeur = ((float)rand() / (float)RAND_MAX) * 100.0f;
     nouveau_paquet->timestamp = (long)time(NULL);
     nouveau_paquet->suivant = NULL;
 
@@ -53,7 +51,7 @@ void produire_paquet(Capteur* c) {
             Paquet* vieux_paquet = c->buffer_tete;
             c->buffer_tete = vieux_paquet->suivant;
             
-            printf("🔴 ALERTE: Memoire saturee. Suppression FIFO du paquet ID [%d] pour liberer de l'espace.\n", vieux_paquet->id);
+            printf("ALERTE : Mémoire saturée. Suppression du paquet ID [%d] pour libérer de l'espace.\n", vieux_paquet->id);
             
             free(vieux_paquet);
             c->buffer_usage--;
@@ -89,4 +87,10 @@ void afficher_etat_capteur(const Capteur* c) {
         p = p->suivant;
     }
     printf("]\n---------------------\n");
+}
+
+void fixer_id_compteur(int nouvel_id) {
+    if (nouvel_id >= compteur_id_paquet) {
+        compteur_id_paquet = nouvel_id + 1;
+    }
 }

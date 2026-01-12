@@ -6,8 +6,14 @@
 static int simulation_temps = 0;
 
 float calculer_energie_transmission(float x, float y) {
-    float distance_squared = (x * x) + (y * y);
-    return E_ELEC + (E_AMP * distance_squared);
+    // Le PDF impose d'utiliser sqrt et pow pour le calcul de distance
+    double d = sqrt(pow((double)x, 2) + pow((double)y, 2));
+    // Formule énergétique : E = E_elec + E_amp * d^2
+    return (float)(E_ELEC + (E_AMP * pow(d, 2)));
+}
+
+void reinitialiser_temps_simulation() {
+    simulation_temps = 0;
 }
 
 int tenter_transmission(Capteur* c) {
@@ -82,11 +88,25 @@ void lancer_simulation(Capteur* c) {
     printf("==========================================\n\n");
     
     int total_transmis = 0;
+    int alertes_saturation = 0;
 
     while (c->batterie > 0) {
         int envoyes = 0;
         int vivant = etape_simulation(c, &envoyes);
         total_transmis += envoyes;
+        
+        // Sécurité contre la boucle infinie si la transmission est impossible
+        if (envoyes == 0 && c->buffer_usage >= MAX_BUFFER_SIZE) {
+            alertes_saturation++;
+        } else {
+            alertes_saturation = 0;
+        }
+
+        if (alertes_saturation >= 5) {
+            printf("\n⚠️  ARRET DE SECURITE : La transmission est impossible (energie insuffisante).\n");
+            printf("   Le capteur a sature son buffer %d fois sans pouvoir envoyer.\n", alertes_saturation);
+            break;
+        }
         
         afficher_etat_capteur(c);
         
@@ -95,6 +115,10 @@ void lancer_simulation(Capteur* c) {
         sleep(1);
     }
 
-    printf("Simulation Terminee. Batterie Vide.\n");
-    printf("Total Paquets Transmis: %d\n", total_transmis);
+    if (c->batterie <= 0) {
+        printf("\n💀 Simulation Terminee. Batterie Vide (0.00J).\n");
+    } else {
+        printf("\n🛑 Simulation Interrompue. Transmission impossible (Blocage Energetique).\n");
+    }
+    printf("📊 Total Paquets Transmis: %d\n", total_transmis);
 }

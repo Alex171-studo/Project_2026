@@ -23,9 +23,10 @@ typedef struct Capteur {
     int buffer_usage;
 } Capteur;
 
-Capteur* creer_capteur(float x, float y);
+Capteur* creer_capteur(float x, float y, float batt_init);
 void liberer_capteur(Capteur* c);
 void produire_paquet(Capteur* c);
 void afficher_etat_capteur(const Capteur* c);
+void fixer_id_compteur(int nouvel_id);
 
 #endif

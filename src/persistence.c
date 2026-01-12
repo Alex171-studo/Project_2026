@@ -65,6 +65,10 @@ Capteur* charger_etat() {
     c->buffer_tete = NULL;
     
     int compte = c->buffer_usage;
+    if (compte > MAX_BUFFER_SIZE) {
+        printf("⚠️ Attention: Buffer dans fichier (%d) depasse le max (%d). Limite appliquee.\n", compte, MAX_BUFFER_SIZE);
+        compte = MAX_BUFFER_SIZE;
+    }
     c->buffer_usage = 0; 
 
     Paquet* dernier = NULL;
@@ -86,6 +90,7 @@ Capteur* charger_etat() {
             dernier->suivant = p;
             dernier = p;
         }
+        fixer_id_compteur(p->id);
         c->buffer_usage++;
     }
 

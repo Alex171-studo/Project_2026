@@ -27,6 +27,7 @@ void afficher_menu() {
 }
 
 int main() {
+    srand(time(NULL));
     Capteur* capteur_courant = NULL;
     int choix;
     
@@ -48,22 +49,27 @@ int main() {
         switch (choix) {
             case 1:
                 if (capteur_courant) liberer_capteur(capteur_courant);
-                float x, y;
+                float x, y, b;
                 printf("Entrer Position X Capteur: ");
-                scanf("%f", &x);
+                if (scanf("%f", &x) != 1) { x = 0; while(getchar() != '\n'); }
                 printf("Entrer Position Y Capteur: ");
-                scanf("%f", &y);
-                capteur_courant = creer_capteur(x, y);
+                if (scanf("%f", &y) != 1) { y = 0; while(getchar() != '\n'); }
+                printf("Entrer Niveau Batterie Initial (Joules, defaut 100): ");
+                if (scanf("%f", &b) != 1) { b = 100; while(getchar() != '\n'); }
+                
+                capteur_courant = creer_capteur(x, y, b);
+                reinitialiser_temps_simulation();
                 
                 FILE* f = fopen("log.txt", "w");
                 if (f) { fprintf(f, "--- Nouveau Log ---\n"); fclose(f); }
                 
-                printf("Capteur Initialise a (%.2f, %.2f)\n", x, y);
+                printf("Capteur Initialise a (%.2f, %.2f) avec %.2f J\n", x, y, b);
                 break;
 
             case 2:
                 if (capteur_courant) liberer_capteur(capteur_courant);
                 capteur_courant = charger_etat();
+                if (capteur_courant) reinitialiser_temps_simulation();
                 break;
 
             case 3:
