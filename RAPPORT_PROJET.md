@@ -40,7 +40,7 @@ Lors du chargement d'un état sauvegardé, le compteur global d'ID pouvait entre
 ## 3. LIENS
 
 ### 📹 Vidéo de Démonstration
-**YouTube** : [lien_youtube]
+**YouTube** : [https://youtu.be/q0B8dfpGDYs]
 
 
 
