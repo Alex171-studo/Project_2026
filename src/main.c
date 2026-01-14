@@ -79,7 +79,11 @@ int main() {
 
             case 4:
                 if (capteur_courant) {
-                    lancer_simulation(capteur_courant);
+                    if (capteur_courant->batterie <= 0) {
+                        printf("Erreur: Batterie vide. Simulation impossible.\n");
+                    } else {
+                        lancer_simulation(capteur_courant);
+                    }
                 } else {
                     printf("Erreur: Aucun capteur initialise.\n");
                 }

@@ -83,7 +83,7 @@ void afficher_etat_capteur(const Capteur* c) {
     Paquet* p = c->buffer_tete;
     printf("Paquets: [ ");
     while (p != NULL) {
-        printf("{ID:%d Val:%.1f} ", p->id, p->valeur);
+        printf("{ID:%d Val:%.2f} ", p->id, p->valeur);
         p = p->suivant;
     }
     printf("]\n---------------------\n");

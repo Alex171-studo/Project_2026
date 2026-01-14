@@ -26,8 +26,21 @@ int tenter_transmission(Capteur* c) {
 
     while (c->buffer_tete != NULL) {
         if (c->batterie < cout_energie) {
-            printf("⚠️  Energie insuffisante! Requis: %.2fJ | Disponible: %.2fJ | Paquet ID %d stocke en memoire.\n", 
-                   cout_energie, c->batterie, c->buffer_tete->id);
+            int id_debut = c->buffer_tete->id;
+            int id_fin = id_debut;
+            Paquet* curr = c->buffer_tete;
+            while (curr->suivant != NULL) {
+                curr = curr->suivant;
+                id_fin = curr->id;
+            }
+            
+            if (c->buffer_usage > 1) {
+                printf("⚠️  Energie insuffisante! Requis: %.2fJ | Dispo: %.2fJ | Paquets ID %d à %d stockés en mémoire.\n", 
+                       cout_energie, c->batterie, id_debut, id_fin);
+            } else {
+                printf("⚠️  Energie insuffisante! Requis: %.2fJ | Dispo: %.2fJ | Paquet ID %d stocké en mémoire.\n", 
+                       cout_energie, c->batterie, id_debut);
+            }
             break; 
         }
 
